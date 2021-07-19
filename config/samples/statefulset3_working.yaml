@@ -15,16 +15,8 @@ spec:
     spec:
       affinity:
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchExpressions:
-                    - key: security
-                      operator: In
-                      values:
-                        - S2
-                topologyKey: topology.kubernetes.io/zone
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: topology.kubernetes.io/hostname
       containers:
         - name: nginx
           image: k8s.gcr.io/nginx-slim:0.8

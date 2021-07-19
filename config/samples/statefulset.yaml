@@ -1,0 +1,44 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zk
+spec:
+  selector:
+    matchLabels:
+      app: zk # has to match .spec.template.metadata.labels
+  serviceName: zk-hs
+  replicas: 5
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        app: zk # has to match .spec.selector.matchLabels
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                      - zk
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: kubernetes-zookeeper
+          image: "k8s.gcr.io/kubernetes-zookeeper:1.0-3.4.10"
+          ports:
+            - containerPort: 80
+              name: client
+          volumeMounts:
+            - name: datadir
+              mountPath: /var/lib/zookeeper
+  volumeClaimTemplates:
+    - metadata:
+        name: datadir
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi

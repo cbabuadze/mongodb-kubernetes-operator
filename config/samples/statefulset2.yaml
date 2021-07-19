@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dse
+spec:
+  serviceName: "dse"
+  replicas: 2
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: dse
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - dse
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: dse
+          image: gmflau/dse-server:5.1.5
+          resources:
+            requests:
+              cpu: "2"
+              memory: "4000Mi"
+          env:
+            - name: DS_LICENSE
+              value: accept
+            - name: SEEDS
+              value: dse-0.dse
+            - name: NUM_TOKENS
+              value: "64"
+          ports:
+            - containerPort: 7000
+              name: intra-node-port
+            - containerPort: 7001
+              name: tls-intra-node
+            - containerPort: 7199
+              name: jmx-port
+            - containerPort: 8609
+              name: inter-node-msg
+            - containerPort: 9042
+              name: cql-port
+            - containerPort: 9160
+              name: thrift-port
+            - containerPort: 8983
+              name: solr-port
+            - containerPort: 8984
+              name: solr-int-node
+            - containerPort: 4040
+              name: spark-app-port
+            - containerPort: 7077
+              name: spark-int-node
+            - containerPort: 7080
+              name: spark-m-web
+            - containerPort: 7081
+              name: spark-w-web
+            - containerPort: 8090
+              name: spark-job
+            - containerPort: 9999
+              name: spark-job-jmx
+            - containerPort: 18080
+              name: spark-histor
+            - containerPort: 8182
+              name: gremlin-port
+            - containerPort: 5598
+              name: dsefs-public
+            - containerPort: 5599
+              name: dsefs-private
+            - containerPort: 61621
+              name: ds-agent-port
+          volumeMounts:
+            - name: dse-data
+              mountPath: /dse-data
+          livenessProbe:
+            tcpSocket:
+              port: 9042
+            initialDelaySeconds: 30
+            timeoutSeconds: 1
+            periodSeconds: 10
+            failureThreshold: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: dse-data
+        annotations:
+          volume.beta.kubernetes.io/storage-class: fast
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 40Gi

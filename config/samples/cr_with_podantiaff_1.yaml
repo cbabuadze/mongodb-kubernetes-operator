@@ -4,7 +4,7 @@ kind: MongoDBCommunity
 metadata:
   name: example-mongodb
 spec:
-  members: 3
+  members: 2
   type: ReplicaSet
   version: "4.2.6"
   security:
@@ -13,7 +13,7 @@ spec:
   users:
     - name: my-user
       db: admin
-      passwordSecretRef: # a reference to the secret that will be used to generate the user's password
+      passwordSecretRef:
         name: my-user-password
       roles:
         - name: clusterAdmin
@@ -21,18 +21,47 @@ spec:
         - name: userAdminAnyDatabase
           db: admin
       scramCredentialsSecretName: my-scram
-  additionalMongodConfig:
-    storage.wiredTiger.engineConfig.journalCompressor: zlib
   statefulSet:
     spec:
+      # Name for the service object created by the operator
+      serviceName: example-openshift-mongodb-svc
+      selector:
+        matchLabels:
+          app: sts # has to match .spec.template.metadata.labels
+      replicas: 2
+      podManagementPolicy: OrderedReady
       template:
+        metadata:
+          labels:
+            app: sts # has to match .spec.selector.matchLabels
         spec:
           affinity:
-            podAffinity:
+            podAntiAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
-                podAffinityTerm:
-                  topologyKey: topology.kubernetes.io/hostName
-
+                - labelSelector:
+                    matchExpressions:
+                      - key: "app"
+                        operator: In
+                        values:
+                          - zk
+                  topologyKey: "kubernetes.io/hostname"
+          volumes:
+            - name: custom-volume
+              emptyDir: {}
+          containers:
+            - name: mongodb-agent
+              volumeMounts:
+                - name: custom-volume
+                  mountPath: /my-custom-version/mount-path
+      # Specifies a size for the data volume different from the default 10Gi
+      volumeClaimTemplates:
+        - metadata:
+            name: data-volume
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 50Gi
 # the user credentials will be generated from this secret
 # once the credentials are generated, this secret is no longer required
 ---

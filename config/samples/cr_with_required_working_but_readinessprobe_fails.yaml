@@ -25,14 +25,25 @@ spec:
     storage.wiredTiger.engineConfig.journalCompressor: zlib
   statefulSet:
     spec:
+      serviceName: example-affinity-mongodb-svc
+      selector:
+        matchLabels:
+          app: mongodb
       template:
+        metadata:
+          labels:
+            app: mongodb
         spec:
           affinity:
             podAntiAffinity:
-              preferredDuringSchedulingIgnoredDuringExecution:
-                - weight: 100
-                  podAffinityTerm:
-                    topologyKey: topology.kubernetes.io/hostname
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchExpressions:
+                      - key: app
+                        operator: In
+                        values:
+                          - mongodb
+                  topologyKey: kubernetes.io/hostname
 
 # the user credentials will be generated from this secret
 # once the credentials are generated, this secret is no longer required

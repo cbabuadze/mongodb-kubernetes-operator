@@ -1,28 +1,31 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: web
+  name: mongodb-sts
 spec:
-  serviceName: "nginx"
+  serviceName: mongodb-svc
   replicas: 3
   selector:
     matchLabels:
-      app: nginx
+      app: mongodb
   template:
     metadata:
       labels:
-        app: nginx
+        app: mongodb
     spec:
       affinity:
-        podAntiAffinity:
+        podAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-            - topologyKey: topology.kubernetes.io/hostname
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - mongodb
+              topologyKey: kubernetes.io/hostname
       containers:
         - name: nginx
           image: k8s.gcr.io/nginx-slim:0.8
-          ports:
-            - containerPort: 80
-              name: web
           volumeMounts:
             - name: www
               mountPath: /usr/share/nginx/html

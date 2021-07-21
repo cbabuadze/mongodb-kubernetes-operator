@@ -25,7 +25,6 @@ spec:
     storage.wiredTiger.engineConfig.journalCompressor: zlib
   statefulSet:
     spec:
-      serviceName: example-affinity-mongodb-svc
       selector:
         matchLabels:
           app: mongodb

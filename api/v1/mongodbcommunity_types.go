@@ -321,6 +321,8 @@ type TLS struct {
 	// CertificateKeySecret is a reference to a Secret containing a private key and certificate to use for TLS.
 	// The key and cert are expected to be PEM encoded and available at "tls.key" and "tls.crt".
 	// This is the same format used for the standard "kubernetes.io/tls" Secret type, but no specific type is required.
+	// Alternatively, an entry tls.pem, containing the concatenation of cert and key, can be provided.
+	// If all of tls.pem, tls.crt and tls.key are present, the tls.pem one needs to be equal to the concatenation of tls.crt and tls.key
 	// +optional
 	CertificateKeySecret LocalObjectReference `json:"certificateKeySecretRef"`
 
@@ -592,12 +594,12 @@ func (m MongoDBCommunity) GetUpdateStrategyType() appsv1.StatefulSetUpdateStrate
 
 // IsChangingVersion returns true if an attempted version change is occurring.
 func (m MongoDBCommunity) IsChangingVersion() bool {
-	prevVersion := m.getPreviousVersion()
-	return prevVersion != "" && prevVersion != m.Spec.Version
+	lastVersion := m.getLastVersion()
+	return lastVersion != "" && lastVersion != m.Spec.Version
 }
 
-// GetPreviousVersion returns the last MDB version the statefulset was configured with.
-func (m MongoDBCommunity) getPreviousVersion() string {
+// GetLastVersion returns the MDB version the statefulset was configured with.
+func (m MongoDBCommunity) getLastVersion() string {
 	return annotations.GetAnnotation(&m, annotations.LastAppliedMongoDBVersion)
 }
 
